@@ -1,0 +1,235 @@
+{
+  "name": "EndpointMaker",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "registro",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        64,
+        0
+      ],
+      "id": "un_id_aleatorio",
+      "name": "Webhook",
+      "webhookId": "un_id_aleatorio"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemma-3-1b-it",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        192
+      ],
+      "id": "6c7c3128-89af-4b36-993b-3a072103da74",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "miAPIKey",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Act as an API Design Expert and Data Generator. Your task is to parse the user instruction and convert it into a fully functional mock API structure.\n\nUSER INSTRUCTION: \"{{ $json.body.instruccion }}\"\n\nSTRICT RULES:\n1. Return ONLY valid JSON. No conversational text, no preambles, no markdown blocks.\n2. The field \"response_body\" MUST contain realistic synthetic data based on the user's request. \n   - If the user asks for \"people\", \"products\", or \"users\", generate a list with at least 2-3 realistic entries with unique data.\n   - Do NOT use generic messages like {\"message\": \"success\"} unless the user explicitly asks for a simple confirmation.\n3. Required keys:\n   - path: String, must start with / (e.g., \"/personas\", \"/api/v1/items\").\n   - method: GET, POST, PUT, or DELETE.\n   - response_body: A JSON object containing the actual data requested.\n   - status_code: Integer (e.g., 200, 201).",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        256,
+        0
+      ],
+      "id": "ec2f86ee-a1f3-4cf2-b8df-59afae019b2e",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cleanText = $json.text.replace(/```json/g, '').replace(/```/g, '').trim();\nconst parsed = JSON.parse(cleanText);\n\n// Si response_body no es un objeto, lo metemos dentro de uno\nlet finalBody = parsed.response_body;\nif (typeof finalBody !== 'object' || finalBody === null) {\n  finalBody = { data: finalBody };\n}\n\nreturn {\n  path: parsed.path,\n  method: parsed.method,\n  response_body: finalBody, // Ahora siempre es un objeto {}\n  status_code: parsed.status_code\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        0
+      ],
+      "id": "08332759-06e0-49d4-bef0-25e483e076f0",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "endpoints",
+          "mode": "list",
+          "cachedResultName": "endpoints"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "path": "={{ $json.path }}",
+            "method": "={{ $json.method }}",
+            "response_body": "={{ $json.response_body }}",
+            "status_code": "={{ $json.status_code || \"\" }}"
+          },
+          "matchingColumns": [
+            "path"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "path",
+              "displayName": "path",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "method",
+              "displayName": "method",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "response_body",
+              "displayName": "response_body",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status_code",
+              "displayName": "status_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        816,
+        0
+      ],
+      "id": "5ab7222a-157d-4aa7-b9e7-96c24451efa1",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "miAPIKey",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "531b817e-5844-49d5-bb10-e64e65690c14",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "id_unico"
+  },
+  "id": "K4OUecoaZ4azVaqJ",
+  "tags": []
+}

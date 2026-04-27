@@ -1,0 +1,6 @@
+﻿POST http://localhost:5678/webhook/registro
+Content-Type: application/json
+
+{
+  "instruccion": "Crea un /GET en /dulces con algunos dulces que tengan tipo, ingredientes y origen (nacionalidad)"
+}
