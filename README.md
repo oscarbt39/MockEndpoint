@@ -76,6 +76,6 @@ Este proyecto está diseñado para **uso local**. Recuerda no subir nunca tus ar
 > Desarrollado con ❤️ usando **Kotlin** y **n8n**.
 
 
-###💻 Una pequeñ demo 
+### 💻 Una pequeña demo 
 
 <img width="736" height="364" alt="demo " src="https://github.com/user-attachments/assets/716489fa-76b7-4713-adad-66483cd20b96" />
